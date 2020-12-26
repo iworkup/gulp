@@ -1,0 +1,14 @@
+@import "components/component-for-style";
+@import "components/fonts";
+@import "../../../node_modules/normalize.css/normalize";
+
+body {
+  font-family: 'Roboto', serif;
+  font-style: normal;
+  font-weight: 400;
+}
+
+.style {
+  font-size: 12px;
+}
+

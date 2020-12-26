@@ -1,0 +1,23 @@
+doctype html
+block variables
+html(lang="ru")
+
+    head
+
+        title= title
+        meta( charset='utf-8' )
+        link( rel="stylesheet" href="assets/css/style.css" )
+        link( rel="stylesheet" href="assets/css/sep.css" )
+
+    body
+
+        header
+            include header
+        main
+            block content
+
+        footer
+            include footer
+
+        script(src='assets/js/scripts.js')
+        script(src='assets/js/sep.js')
