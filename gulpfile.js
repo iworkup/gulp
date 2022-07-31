@@ -10,6 +10,7 @@ let path = {
 
 let config = {
 
+    htmlStyle: 'html', // html|pug
     env: '',
     deploy: {
 
@@ -58,23 +59,38 @@ const sourcemaps = require('gulp-sourcemaps');
 const babel = require('gulp-babel');
 const uglify = require('gulp-uglify');
 
+const htmlTask = () => {
 
-const pugTask = () => {
-    if (config.env === 'dev') {
-        return gulp.src(path.src + 'views/*.pug')
-            .pipe(pug({pretty: true}))
-            .pipe(gulp.dest(path.dev))
-            .pipe(browserSync.stream());
-    } else if (config.env === 'dist') {
-        return gulp.src(path.src + 'views/*.pug')
-            .pipe(pug({pretty: true}))
-            .pipe(gulp.dest(path.dist))
-            .pipe(browserSync.stream());
+    if (config.htmlStyle === 'html') {
+
+        if (config.env === 'dev') {
+            return gulp.src(path.src + 'html/*.html')
+                .pipe(gulp.dest(path.dev))
+                .pipe(browserSync.stream());
+        } else if (config.env === 'dist') {
+            return gulp.src(path.src + 'html/*.html')
+                .pipe(gulp.dest(path.dist))
+        }
+
+    } else if (config.htmlStyle === 'pug') {
+
+        if (config.env === 'dev') {
+            return gulp.src(path.src + 'pug/*.pug')
+                .pipe(pug({pretty: true}))
+                .pipe(gulp.dest(path.dev))
+                .pipe(browserSync.stream());
+        } else if (config.env === 'dist') {
+            return gulp.src(path.src + 'pug/*.pug')
+                .pipe(pug({pretty: true}))
+                .pipe(gulp.dest(path.dist))
+        }
+
     }
 
 };
 
-exports.pugTask = pugTask;
+exports.htmlTask = htmlTask;
+
 
 const sassTask = () => {
     if (config.env === 'dev') {
@@ -166,7 +182,8 @@ const browserSyncTask = () => {
 exports.browserSyncTask = browserSyncTask;
 
 const watchTask = () => {
-    gulp.watch(path.src + 'views/**/*.pug', pugTask);
+    gulp.watch(path.src + 'pug/**/*.pug', htmlTask);
+    gulp.watch(path.src + 'html/**/*.html', htmlTask);
     gulp.watch(path.src + 'sass/**/*.scss', sassTask);
     gulp.watch(path.src + 'js/**/*.js', jsTask);
     gulp.watch(path.src + 'fonts/**/*.*', fontsTask);
@@ -225,7 +242,7 @@ exports.default = gulp.series(
         jsTask,
         fontsTask,
         imagesTask,
-        pugTask,
+        htmlTask,
         watchTask,
         browserSyncTask
     )
@@ -239,7 +256,7 @@ exports.dist = gulp.series(
     jsTask,
     fontsTask,
     imagesTask,
-    pugTask,
+    htmlTask,
 );
 
 exports.dep = gulp.series(
@@ -250,7 +267,7 @@ exports.dep = gulp.series(
     jsTask,
     fontsTask,
     imagesTask,
-    pugTask,
+    htmlTask,
 
     runDeploy,
 );
