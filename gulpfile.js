@@ -1,38 +1,29 @@
 let path = {
 
-    src: 'app/src/',
-    dev: 'app/dev/',
-    devAssets: 'app/dev/assets/',
-    dist: 'app/dist/',
-    distAssets: 'app/dist/assets/',
-    
+    src: 'app/src/', dev: 'app/dev/', devAssets: 'app/dev/assets/', dist: 'app/dist/', distAssets: 'app/dist/assets/',
+
 };
 
 let config = {
 
     htmlStyle: 'html', // html|pug
-    env: '',
+    env: 'dev', // dev|prod
     deploy: {
 
         type: 'ftp', // ftp|ssh - реализация ssh в планах
         ftp: {
-            user: "",
-            // Password optional, prompted if none given
+            user: "", // Password optional, prompted if none given
             password: "",
             host: "",
             port: 21,
             localRoot: path.dist,
-            remoteRoot: "/test/",
-            // include: ["*", "**/*"],      // this would upload everything except dot files
+            remoteRoot: "/test/", // include: ["*", "**/*"],      // this would upload everything except dot files
             // include: ["*.php", "dist/*", ".*"],
-            include: ["*", "**/*"],
-            // e.g. exclude sourcemaps, and ALL files in node_modules (including dot files)
+            include: ["*", "**/*"], // e.g. exclude sourcemaps, and ALL files in node_modules (including dot files)
             // exclude: ["dist/**/*.map", "node_modules/**", "node_modules/**/.*", ".git/**"],
             // delete ALL existing files at destination before uploading, if true
-            deleteRemote: false,
-            // Passive mode is forced (EPSV command is not sent)
-            forcePasv: true,
-            // use sftp or ftp
+            deleteRemote: false, // Passive mode is forced (EPSV command is not sent)
+            forcePasv: true, // use sftp or ftp
             sftp: false
 
         }
@@ -46,14 +37,15 @@ const clean = require('del');
 const rigger = require('gulp-rigger');
 const rename = require('gulp-rename');
 const browserSync = require('browser-sync').create();
-const devip = require('dev-ip');
+const dev_ip = require('dev-ip');
 
 const FtpDeploy = require("ftp-deploy");
 const ftpDeploy = new FtpDeploy();
 
+const html_include = require('gulp-file-include');
 const pug = require('gulp-pug');
 const sass = require('gulp-sass')(require('sass'));
-const cleancss = require('gulp-clean-css');
+const clean_css = require('gulp-clean-css');
 const autoprefixer = require('gulp-autoprefixer');
 const sourcemaps = require('gulp-sourcemaps');
 const babel = require('gulp-babel');
@@ -64,11 +56,19 @@ const htmlTask = () => {
     if (config.htmlStyle === 'html') {
 
         if (config.env === 'dev') {
-            return gulp.src(path.src + 'html/*.html')
+            return gulp.src([path.src + 'html/**/*.html', '!' + path.src + 'html/components/**/*.html'])
+                .pipe(html_include({
+                    prefix: '@@',
+                    basepath: '@file'
+                }))
                 .pipe(gulp.dest(path.dev))
                 .pipe(browserSync.stream());
-        } else if (config.env === 'dist') {
-            return gulp.src(path.src + 'html/*.html')
+        } else if (config.env === 'prod') {
+            return gulp.src([path.src + 'html/**/*.html', '!' + path.src + 'html/components/**/*.html'])
+                .pipe(html_include({
+                    prefix: '@@',
+                    basepath: '@file'
+                }))
                 .pipe(gulp.dest(path.dist))
         }
 
@@ -79,7 +79,7 @@ const htmlTask = () => {
                 .pipe(pug({pretty: true}))
                 .pipe(gulp.dest(path.dev))
                 .pipe(browserSync.stream());
-        } else if (config.env === 'dist') {
+        } else if (config.env === 'prod') {
             return gulp.src(path.src + 'pug/*.pug')
                 .pipe(pug({pretty: true}))
                 .pipe(gulp.dest(path.dist))
@@ -101,17 +101,15 @@ const sassTask = () => {
             .pipe(sourcemaps.write())
             .pipe(gulp.dest(path.devAssets + 'css/'))
             .pipe(browserSync.stream());
-    } else if (config.env === 'dist') {
+    } else if (config.env === 'prod') {
         return gulp.src(path.src + 'sass/*.*') // собираем все SASS файлы, в один файл
             //.pipe(rename({suffix: '.min'})) // добавляем префикс .min к названию всех файлов
             .pipe(sass()) // компилируем
             .pipe(autoprefixer({
-                overrideBrowserslist: ['last 10 versions'],
-                grid: true
+                overrideBrowserslist: ['last 10 versions'], grid: true
             }))
-            .pipe(cleancss({
-                debug: true,
-                level: 2
+            .pipe(clean_css({
+                debug: true, level: 2
             }, (details) => {
                 console.log(`Файл ${details.name} сжат на ${details.stats.originalSize - details.stats.minifiedSize} байт. Итог: ${details.stats.minifiedSize} байт.`);
             }))
@@ -129,7 +127,7 @@ const jsTask = () => {
             .pipe(rigger())
             .pipe(gulp.dest(path.devAssets + 'js/'))
             .pipe(browserSync.stream());
-    } else if (config.env === 'dist') {
+    } else if (config.env === 'prod') {
         return gulp.src(path.src + 'js/*.js')
             .pipe(babel())
             .pipe(rigger())
@@ -146,7 +144,7 @@ const fontsTask = () => {
         return gulp.src(path.src + 'fonts/*.*')
             .pipe(gulp.dest(path.devAssets + 'fonts/'))
             .pipe(browserSync.stream());
-    } else if (config.env === 'dist') {
+    } else if (config.env === 'prod') {
         return gulp.src(path.src + 'fonts/*.*')
             .pipe(gulp.dest(path.distAssets + 'fonts/'))
     }
@@ -160,7 +158,7 @@ const imagesTask = () => {
         return gulp.src(path.src + 'img/**/*.*')
             .pipe(gulp.dest(path.devAssets + 'img/'))
             .pipe(browserSync.stream());
-    } else if (config.env === 'dist') {
+    } else if (config.env === 'prod') {
         return gulp.src(path.src + 'img/**/*.*')
             .pipe(gulp.dest(path.distAssets + 'img/'))
     }
@@ -173,9 +171,7 @@ const browserSyncTask = () => {
     browserSync.init({
         server: {
             baseDir: path.dev
-        },
-        online: true,
-        host: devip()
+        }, online: true, host: dev_ip()
     });
 };
 
@@ -196,7 +192,7 @@ exports.watchTask = watchTask;
 const runClean = () => {
     if (config.env === 'dev') {
         return clean([path.dev]);
-    } else if (config.env === 'dist') {
+    } else if (config.env === 'prod') {
         return clean([path.dist]);
     }
 };
@@ -227,47 +223,22 @@ exports.setDevEnv = setDevEnv;
 
 
 const setDistEnv = (cb) => {
-    config.env = 'dist';
+    config.env = 'prod';
     cb();
 };
 
 exports.setDistEnv = setDistEnv;
 
-exports.default = gulp.series(
-    setDevEnv,
-    runClean,
+exports.default = gulp.series(setDevEnv, runClean,
 
-    gulp.parallel(
-        sassTask,
-        jsTask,
-        fontsTask,
-        imagesTask,
-        htmlTask,
-        watchTask,
-        browserSyncTask
-    )
-);
+    gulp.parallel(sassTask, jsTask, fontsTask, imagesTask, htmlTask, watchTask, browserSyncTask));
 
-exports.dist = gulp.series(
-    setDistEnv,
-    runClean,
+exports.dist = gulp.series(setDistEnv, runClean,
 
-    sassTask,
-    jsTask,
-    fontsTask,
-    imagesTask,
-    htmlTask,
-);
+    sassTask, jsTask, fontsTask, imagesTask, htmlTask,);
 
-exports.dep = gulp.series(
-    setDistEnv,
-    runClean,
+exports.dep = gulp.series(setDistEnv, runClean,
 
-    sassTask,
-    jsTask,
-    fontsTask,
-    imagesTask,
-    htmlTask,
+    sassTask, jsTask, fontsTask, imagesTask, htmlTask,
 
-    runDeploy,
-);
+    runDeploy,);
